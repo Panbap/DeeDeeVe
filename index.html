@@ -83,6 +83,16 @@
             };
         }
 
+        // Lấy tọa độ cảm ứng trên canvas
+        function getTouchPosition(e) {
+            const rect = canvas.getBoundingClientRect(); // Lấy kích thước canvas
+            const touch = e.touches[0]; // Lấy thông tin cảm ứng đầu tiên
+            return {
+                x: touch.clientX - rect.left, // Tính toán tọa độ x
+                y: touch.clientY - rect.top    // Tính toán tọa độ y
+            };
+        }
+
         // Bắt đầu vẽ
         function startPosition(e) {
             painting = true;
@@ -105,7 +115,7 @@
         function draw(e) {
             if (!painting) return;
 
-            const pos = getMousePosition(e); // Lấy tọa độ chuột
+            const pos = e.touches ? getTouchPosition(e) : getMousePosition(e); // Lấy tọa độ
 
             // Nếu có vị trí trước đó, vẽ từ vị trí trước đến vị trí hiện tại
             if (prevPos) {
@@ -207,10 +217,21 @@
             }
         }
 
-        // Thêm sự kiện
+        // Thêm sự kiện cho chuột
         canvas.addEventListener('mousedown', startPosition);
         canvas.addEventListener('mouseup', endPosition);
         canvas.addEventListener('mousemove', draw);
+
+        // Thêm sự kiện cho cảm ứng
+        canvas.addEventListener('touchstart', (e) => {
+            startPosition(e);
+            e.preventDefault(); // Ngăn chặn sự kiện cuộn trang
+        });
+        canvas.addEventListener('touchend', endPosition);
+        canvas.addEventListener('touchmove', (e) => {
+            draw(e);
+            e.preventDefault(); // Ngăn chặn sự kiện cuộn trang
+        });
     </script>
 
 </body>
