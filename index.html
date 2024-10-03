@@ -170,6 +170,43 @@
             });
         }
 
+        // Thêm sự kiện cho các phím tắt
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey) {
+                switch (e.key) {
+                    case 'z': // Hoàn tác
+                        e.preventDefault();
+                        undo();
+                        break;
+                    case 'c': // Sao chép
+                        e.preventDefault();
+                        // Chức năng sao chép (cần được triển khai)
+                        break;
+                    case 'v': // Dán
+                        e.preventDefault();
+                        // Chức năng dán (cần được triển khai)
+                        break;
+                    case 's': // Lưu
+                        e.preventDefault();
+                        const fileName = document.getElementById('fileName').value || 'hinh_ve'; // Lấy tên tệp từ input
+                        canvas.toBlob((blob) => {
+                            saveAs(blob, `${fileName}.png`); // Lưu tệp với tên đã chỉ định
+                        });
+                        break;
+                }
+            }
+        });
+
+        // Hoàn tác
+        function undo() {
+            if (lines.length > 0) {
+                lines.pop(); // Xóa nét vẽ cuối cùng
+                ctx.clearRect(0, 0, canvas.width, canvas.height); // Xóa canvas
+                redraw(); // Vẽ lại tất cả các nét còn lại
+                prevPos = null; // Đặt lại vị trí trước
+            }
+        }
+
         // Thêm sự kiện
         canvas.addEventListener('mousedown', startPosition);
         canvas.addEventListener('mouseup', endPosition);
