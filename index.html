@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeeDee Vẽ</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        canvas {
+            border: 1px solid #000;
+            width: 100%;
+            max-width: 800px;
+            height: 600px; /* Đặt chiều cao cố định cho canvas */
+            background-color: #fff; /* Thêm màu nền cho canvas */
+        }
+        #controls {
+            margin: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        #logo {
+            width: 100px;
+            margin-bottom: 10px;
+        }
+        #fileName {
+            margin-left: 10px;
+            width: 100%;
+            max-width: 300px;
+        }
+        button, input[type="range"] {
+            width: 100%;
+            max-width: 300px;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <img id="logo" src="logocon.png" alt="Logo">
+
+    <h1>DeeDee Vẽ</h1>
+    <canvas id="canvas"></canvas>
+    <div id="controls">
+        <button id="clearButton">Xóa Bảng Vẽ</button>
+        <button id="deleteLastLineButton">Xóa Nét Vẽ Cuối Cùng</button>
+        <button id="saveButton">Lưu Hình Ảnh</button>
+        <label for="lineWidth">Kích thước nét vẽ:</label>
+        <input type="range" id="lineWidth" min="1" max="20" value="5">
+        <label for="fileName">Tên tệp:</label>
+        <input type="text" id="fileName" placeholder="ten_hinh_ve" />
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let painting = false;
+        let lines = []; // Mảng lưu trữ các nét vẽ
+        let currentLine = []; // Mảng lưu trữ nét vẽ hiện tại
+        let prevPos = null; // Lưu trữ vị trí trước đó
+
+        // Thiết lập kích thước canvas để nó khớp với chiều rộng và chiều cao thực tế
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+
+        // Lấy tọa độ chuột trên canvas
+        function getMousePosition(e) {
+            const rect = canvas.getBoundingClientRect(); // Lấy kích thước canvas
+            return {
+                x: e.clientX - rect.left, // Tính toán tọa độ x
+                y: e.clientY - rect.top   // Tính toán tọa độ y
+            };
+        }
+
+        // Bắt đầu vẽ
+        function startPosition(e) {
+            painting = true;
+            currentLine = {
+                points: [], // Tọa độ của các điểm trong nét vẽ
+                lineWidth: document.getElementById('lineWidth').value // Kích thước nét vẽ
+            };
+            lines.push(currentLine); // Lưu nét vẽ mới vào mảng
+            draw(e); // Vẽ ngay lập tức
+        }
+
+        // Dừng vẽ
+        function endPosition() {
+            painting = false;
+            ctx.beginPath(); // Bắt đầu lại đường vẽ
+            prevPos = null; // Đặt lại vị trí trước
+        }
+
+        // Vẽ hình
+        function draw(e) {
+            if (!painting) return;
+
+            const pos = getMousePosition(e); // Lấy tọa độ chuột
+
+            // Nếu có vị trí trước đó, vẽ từ vị trí trước đến vị trí hiện tại
+            if (prevPos) {
+                ctx.lineWidth = currentLine.lineWidth; // Sử dụng kích thước nét vẽ hiện tại
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#000';
+
+                ctx.beginPath();
+                ctx.moveTo(prevPos.x, prevPos.y); // Di chuyển đến vị trí trước
+                ctx.lineTo(pos.x, pos.y); // Vẽ đến vị trí hiện tại
+                ctx.stroke(); // Vẽ nét vẽ
+            }
+
+            // Lưu tọa độ cho vị trí trước
+            currentLine.points.push({ x: pos.x, y: pos.y });
+            prevPos = pos; // Cập nhật vị trí trước
+        }
+
+        // Xóa bảng vẽ
+        document.getElementById('clearButton').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            lines = []; // Xóa mảng nét vẽ
+            prevPos = null; // Đặt lại vị trí trước
+        });
+
+        // Xóa nét vẽ cuối cùng
+        document.getElementById('deleteLastLineButton').addEventListener('click', () => {
+            lines.pop(); // Xóa nét vẽ cuối cùng
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Xóa canvas
+            redraw(); // Vẽ lại tất cả các nét còn lại
+            prevPos = null; // Đặt lại vị trí trước
+        });
+
+        // Lưu hình ảnh
+        document.getElementById('saveButton').addEventListener('click', () => {
+            const fileName = document.getElementById('fileName').value || 'hinh_ve'; // Lấy tên tệp từ input
+            canvas.toBlob((blob) => {
+                saveAs(blob, `${fileName}.png`); // Lưu tệp với tên đã chỉ định
+            });
+        });
+
+        // Thay đổi kích thước nét vẽ
+        document.getElementById('lineWidth').addEventListener('input', (e) => {
+            if (painting) {
+                currentLine.lineWidth = e.target.value; // Cập nhật kích thước nét vẽ hiện tại
+            }
+        });
+
+        // Vẽ lại tất cả các nét
+        function redraw() {
+            lines.forEach(line => {
+                ctx.lineWidth = line.lineWidth; // Đặt lại kích thước nét vẽ cho từng nét
+                ctx.lineCap = 'round';
+                ctx.strokeStyle = '#000';
+
+                ctx.beginPath(); // Bắt đầu lại đường vẽ
+                ctx.moveTo(line.points[0].x, line.points[0].y); // Di chuyển đến điểm bắt đầu của nét vẽ
+                for (let i = 1; i < line.points.length; i++) {
+                    ctx.lineTo(line.points[i].x, line.points[i].y);
+                }
+                ctx.stroke(); // Vẽ nét vẽ
+            });
+        }
+
+        // Thêm sự kiện
+        canvas.addEventListener('mousedown', startPosition);
+        canvas.addEventListener('mouseup', endPosition);
+        canvas.addEventListener('mousemove', draw);
+    </script>
+
+</body>
+</html>
